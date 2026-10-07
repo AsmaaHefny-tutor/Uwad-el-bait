@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egyptian Arabic: Rooms of the House</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        pastel: {
+                            blue: '#e0f2fe',
+                            purple: '#f3e8ff',
+                            pink: '#fce7f3',
+                            yellow: '#fef9c3',
+                            orange: '#ffedd5',
+                            mint: '#d1fae5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Quicksand', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles & Interactive Elements */
+        body {
+            background-color: #f8fafc;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .drop-zone-active {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+            transform: scale(1.02);
+        }
+
+        .draggable-item {
+            cursor: grab;
+            touch-action: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .draggable-item.selected-tap {
+            ring: 4px;
+            ring-color: #3b82f6;
+            border-color: #2563eb;
+            background-color: #dbeafe;
+        }
+
+        .room-svg {
+            filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.05));
+        }
+
+        /* Smooth bounce animation for correct answer */
+        @keyframes bounce-sm {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-bounce-sm {
+            animation: bounce-sm 0.4s ease infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-3 md:p-6 text-slate-800">
+
+    <!-- Top Nav / Header -->
+    <header class="w-full max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-house-chimney"></i>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-lg md:text-xl text-slate-800">Egyptian Arabic 101</h1>
+                <p class="text-xs text-slate-500 font-medium">Topic: Rooms of the House (Franco)</p>
+            </div>
+        </div>
+        <div id="score-badge" class="hidden md:flex items-center space-x-1.5 bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+            <i class="fa-solid fa-star text-amber-500"></i>
+            <span id="header-score">Score: 0</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-3xl bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-[580px] relative">
+        
+        <!-- Progress Bar (Visible during questions) -->
+        <div id="progress-container" class="w-full bg-slate-100 h-3 border-b border-slate-100 flex">
+            <div id="progress-bar" class="bg-emerald-500 h-full transition-all duration-500 ease-out w-0"></div>
+        </div>
+
+        <div id="step-indicator" class="px-6 pt-4 pb-1 text-xs font-bold tracking-wider text-slate-400 uppercase flex justify-between items-center">
+            <span id="activity-title">Activity 1: Look & Choose</span>
+            <span id="question-number">Question 1 of 12</span>
+        </div>
+
+        <!-- Dynamic Content Card Container -->
+        <div id="app-card" class="p-4 md:p-8 flex-1 flex flex-col justify-between">
+            <!-- Dynamic Content inserted via JS -->
+        </div>
+
+        <!-- Global Feedback Modal / Toast -->
+        <div id="feedback-banner" class="hidden absolute bottom-4 left-4 right-4 p-4 rounded-2xl border text-center font-bold shadow-lg transition-all transform translate-y-2 opacity-0 z-50 flex items-center justify-center space-x-3">
+            <span id="feedback-icon" class="text-2xl"></span>
+            <span id="feedback-text" class="text-base md:text-lg"></span>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-6 text-center text-xs text-slate-400 font-medium">
+        Learn Egyptian Arabic for Beginners &bull; Franco Edition
+    </footer>
+
+    <script>
+        /*
+         * SVG ILLUSTRATIONS FOR ROOMS
+         * Clean, highly distinct 3D vector-style isometric scenes for all 5 rooms
+         */
+        const ROOM_SVGS = {
+            bedroom: `
+                <svg viewBox="0 0 400 280" class="w-full h-full room-svg" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Room Walls and Floor -->
+                    <polygon points="20,220 200,260 380,220 380,40 200,80 20,40" fill="#e0f2fe"/>
+                    <polygon points="20,220 200,260 200,80 20,40" fill="#bae6fd"/>
+                    <polygon points="200,260 380,220 380,40 200,80" fill="#7dd3fc"/>
+                    <polygon points="20,220 200,260 380,220 200,180" fill="#e2e8f0"/>
+                    
+                    <!-- Wall Painting/Frame -->
+                    <rect x="70" y="80" width="40" height="40" rx="4" fill="#fef08a" stroke="#f59e0b" stroke-width="3"/>
+                    <circle x="90" cy="100" r="10" fill="#f97316"/>
+
+                    <!-- Nightstand & Lamp -->
+                    <polygon points="80,185 110,175 130,185 100,195" fill="#f97316"/>
+                    <rect x="80" y="185" width="20" height="25" fill="#ea580c"/>
+                    <polygon points="100,195 130,185 130,210 100,220" fill="#c2410c"/>
+                    <!-- Lamp -->
+                    <path d="M90,170 L100,170 L97,185 L93,185 Z" fill="#94a3b8"/>
+                    <polygon points="85,170 105,170 100,155 90,155" fill="#fde047"/>
+
+                    <!-- Big Bed -->
+                    <polygon points="130,205 270,160 340,185 200,230" fill="#3b82f6"/>
+                    <!-- Mattress -->
+                    <polygon points="135,198 265,155 335,180 205,223" fill="#ffffff"/>
+                    <!-- Blanket -->
+                    <polygon points="175,185 265,155 335,180 245,210" fill="#60a5fa"/>
+                    <!-- Pillows -->
+                    <polygon points="150,188 185,176 200,182 165,194" fill="#38bdf8"/>
+                    <polygon points="190,175 225,163 240,169 205,181" fill="#38bdf8"/>
+                    <!-- Headboard -->
+                    <polygon points="120,175 255,130 255,165 120,210" fill="#1e3a8a"/>
+
+                    <!-- Rug -->
+                    <ellipse cx="210" cy="235" rx="70" ry="20" fill="#f472b6" opacity="0.8"/>
+                </svg>
+            `,
+            bathroom: `
+                <svg viewBox="0 0 400 280" class="w-full h-full room-svg" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Room Walls and Floor -->
+                    <polygon points="20,220 200,260 380,220 380,40 200,80 20,40" fill="#ccfbf1"/>
+                    <polygon points="20,220 200,260 200,80 20,40" fill="#99f6e4"/>
+                    <polygon points="200,260 380,220 380,40 200,80" fill="#5eead4"/>
+                    <polygon points="20,220 200,260 380,220 200,180" fill="#cbd5e1"/>
+
+                    <!-- Tiles Pattern lines -->
+                    <line x1="200" y1="80" x2="200" y2="260" stroke="#2dd4bf" stroke-width="2"/>
+
+                    <!-- Bathtub -->
+                    <path d="M 60,190 Q 60,160 140,150 L 220,175 Q 220,210 140,220 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                    <path d="M 70,185 Q 70,165 138,157 L 210,180 Q 210,205 142,212 Z" fill="#38bdf8" opacity="0.6"/>
+                    <!-- Shower Head & Pipe -->
+                    <path d="M 80,100 L 80,155" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M 80,100 Q 80,85 100,85 L 110,85" stroke="#94a3b8" stroke-width="5" fill="none"/>
+                    <polygon points="108,80 120,85 108,90" fill="#64748b"/>
+                    <!-- Water drops -->
+                    <circle cx="118" cy="96" r="2" fill="#38bdf8"/>
+                    <circle cx="124" cy="105" r="2" fill="#38bdf8"/>
+
+                    <!-- Toilet -->
+                    <rect x="300" y="140" width="35" height="45" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+                    <ellipse cx="317" cy="185" rx="20" ry="15" fill="#ffffff" stroke="#cbd5e1"/>
+                    <ellipse cx="317" cy="185" rx="14" ry="10" fill="#e2e8f0"/>
+
+                    <!-- Sink & Mirror -->
+                    <rect x="235" y="90" width="30" height="45" rx="15" fill="#38bdf8" stroke="#0284c7" stroke-width="3"/>
+                    <polygon points="230,160 270,148 270,180 230,192" fill="#ffffff" stroke="#cbd5e1"/>
+                    <ellipse cx="250" cy="154" rx="18" ry="8" fill="#cbd5e1"/>
+                </svg>
+            `,
+            kitchen: `
+                <svg viewBox="0 0 400 280" class="w-full h-full room-svg" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Room Walls and Floor -->
+                    <polygon points="20,220 200,260 380,220 380,40 200,80 20,40" fill="#ffedd5"/>
+                    <polygon points="20,220 200,260 200,80 20,40" fill="#fed7aa"/>
+                    <polygon points="200,260 380,220 380,40 200,80" fill="#fdba74"/>
+                    <polygon points="20,220 200,260 380,220 200,180" fill="#e2e8f0"/>
+
+                    <!-- Refrigerator -->
+                    <polygon points="50,140 90,125 130,140 90,155" fill="#94a3b8"/>
+                    <rect x="50" y="140" width="40" height="90" fill="#cbd5e1"/>
+                    <polygon points="90,155 130,140 130,230 90,245" fill="#64748b"/>
+                    <!-- Fridge door splits -->
+                    <line x1="50" y1="180" x2="130" y2="180" stroke="#475569" stroke-width="2"/>
+                    <rect x="82" y="155" width="4" height="18" rx="2" fill="#334155"/>
+                    <rect x="82" y="192" width="4" height="25" rx="2" fill="#334155"/>
+
+                    <!-- Kitchen Counter & Cabinets -->
+                    <polygon points="150,180 340,135 340,150 150,195" fill="#f97316"/>
+                    <polygon points="150,195 340,150 340,210 150,255" fill="#ea580c"/>
+                    <!-- Stove top burners -->
+                    <ellipse cx="200" cy="178" rx="12" ry="5" fill="#334155"/>
+                    <ellipse cx="230" cy="171" rx="12" ry="5" fill="#334155"/>
+                    <!-- Oven door -->
+                    <rect x="180" y="200" width="55" height="35" rx="3" fill="#1e293b"/>
+                    <rect x="188" y="206" width="39" height="20" rx="2" fill="#f8fafc" opacity="0.3"/>
+
+                    <!-- Upper Cabinets -->
+                    <polygon points="170,90 330,55 330,105 170,140" fill="#fb923c"/>
+                    <line x1="250" y1="72" x2="250" y2="122" stroke="#ea580c" stroke-width="2"/>
+                </svg>
+            `,
+            salon: `
+                <svg viewBox="0 0 400 280" class="w-full h-full room-svg" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Room Walls and Floor -->
+                    <polygon points="20,220 200,260 380,220 380,40 200,80 20,40" fill="#f3e8ff"/>
+                    <polygon points="20,220 200,260 200,80 20,40" fill="#e9d5ff"/>
+                    <polygon points="200,260 380,220 380,40 200,80" fill="#d8b4fe"/>
+                    <polygon points="20,220 200,260 380,220 200,180" fill="#f1f5f9"/>
+
+                    <!-- Large Sofa -->
+                    <polygon points="70,185 200,145 270,170 140,210" fill="#a855f7"/>
+                    <!-- Backrest -->
+                    <polygon points="70,150 200,110 200,145 70,185" fill="#7e22ce"/>
+                    <!-- Armrest Left -->
+                    <polygon points="60,170 90,160 100,190 70,200" fill="#6b21a8"/>
+                    <!-- Armrest Right -->
+                    <polygon points="240,160 275,150 285,175 250,185" fill="#6b21a8"/>
+                    <!-- Cushions -->
+                    <polygon points="90,180 160,158 200,172 130,194" fill="#c084fc"/>
+
+                    <!-- Coffee Table -->
+                    <polygon points="150,215 230,190 270,205 190,230" fill="#f59e0b"/>
+                    <polygon points="150,215 190,230 190,238 150,223" fill="#d97706"/>
+                    <polygon points="190,230 270,205 270,213 190,238" fill="#b45309"/>
+
+                    <!-- TV & Stand on Wall/Floor right -->
+                    <polygon points="290,130 360,105 360,165 290,190" fill="#1e293b"/>
+                    <polygon points="295,135 355,113 355,160 295,182" fill="#38bdf8"/>
+                    <!-- TV Screen Content (a smiley face) -->
+                    <circle cx="325" cy="145" r="12" fill="#fef08a"/>
+                </svg>
+            `,
+            sofra: `
+                <svg viewBox="0 0 400 280" class="w-full h-full room-svg" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Room Walls and Floor -->
+                    <polygon points="20,220 200,260 380,220 380,40 200,80 20,40" fill="#fef9c3"/>
+                    <polygon points="20,220 200,260 200,80 20,40" fill="#fef08a"/>
+                    <polygon points="200,260 380,220 380,40 200,80" fill="#fde047"/>
+                    <polygon points="20,220 200,260 380,220 200,180" fill="#e2e8f0"/>
+
+                    <!-- Ceiling Lamp Hanging down -->
+                    <line x1="200" y1="80" x2="200" y2="120" stroke="#71717a" stroke-width="3"/>
+                    <polygon points="180,140 220,140 210,120 190,120" fill="#f59e0b"/>
+                    <!-- Light Glow -->
+                    <polygon points="150,220 250,220 210,140 190,140" fill="#fef08a" opacity="0.3"/>
+
+                    <!-- Dining Table Top -->
+                    <polygon points="120,180 280,140 340,170 180,210" fill="#854d0e"/>
+                    <polygon points="120,180 180,210 180,218 120,188" fill="#713f12"/>
+                    <polygon points="180,210 340,170 340,178 180,218" fill="#581c87"/>
+
+                    <!-- Table Legs -->
+                    <rect x="125" y="188" width="8" height="35" fill="#713f12"/>
+                    <rect x="178" y="215" width="8" height="30" fill="#713f12"/>
+                    <rect x="330" y="175" width="8" height="35" fill="#713f12"/>
+
+                    <!-- Dishes / Fruit Bowl on Table -->
+                    <ellipse cx="230" cy="172" rx="20" ry="9" fill="#ffffff"/>
+                    <circle cx="225" cy="170" r="5" fill="#ef4444"/>
+                    <circle cx="235" cy="171" r="5" fill="#eab308"/>
+                    <circle cx="230" cy="166" r="4" fill="#22c55e"/>
+
+                    <!-- Dining Chairs -->
+                    <!-- Chair 1 (Left) -->
+                    <rect x="100" y="145" width="25" height="40" rx="3" fill="#a16207"/>
+                    <polygon points="95,185 130,175 135,185 100,195" fill="#ca8a04"/>
+
+                    <!-- Chair 2 (Right) -->
+                    <rect x="290" y="110" width="25" height="40" rx="3" fill="#a16207"/>
+                    <polygon points="285,150 320,140 325,150 290,160" fill="#ca8a04"/>
+                </svg>
+            `
+        };
+
+        // Master Question Dataset (12 Questions covering all 6 activities)
+        const QUESTIONS = [
+            // Activity 1: Look & Choose
+            {
+                activity: "Activity 1: Look & Choose",
+                type: "mcq_image",
+                instruction: "Look at the picture and answer the question:",
+                question: "Where do you sleep?",
+                room: "bedroom",
+                options: [
+                    { text: "oda el nom", correct: true },
+                    { text: "7ammam", correct: false },
+                    { text: "matb5", correct: false }
+                ]
+            },
+            {
+                activity: "Activity 1: Look & Choose",
+                type: "mcq_image",
+                instruction: "Look at the picture and answer the question:",
+                question: "Where do you cook food?",
+                room: "kitchen",
+                options: [
+                    { text: "salon", correct: false },
+                    { text: "matb5", correct: true },
+                    { text: "sofra", correct: false }
+                ]
+            },
+
+            // Activity 2: Match the Picture
+            {
+                activity: "Activity 2: Match the Picture",
+                type: "matching_all",
+                instruction: "Drag each Franco word (or tap word then tap box) to its matching room:",
+                items: [
+                    { id: "b1", room: "bedroom", label: "oda el nom" },
+                    { id: "b2", room: "bathroom", label: "7ammam" },
+                    { id: "b3", room: "kitchen", label: "matb5" },
+                    { id: "b4", room: "salon", label: "salon" },
+                    { id: "b5", room: "sofra", label: "sofra" }
+                ]
+            },
+
+            // Activity 3: English -> Franco
+            {
+                activity: "Activity 3: English → Franco",
+                type: "mcq_text",
+                instruction: "Choose the correct Egyptian Arabic (Franco) word for:",
+                question: "Bathroom",
+                options: [
+                    { text: "salon", correct: false },
+                    { text: "7ammam", correct: true },
+                    { text: "sofra", correct: false }
+                ]
+            },
+            {
+                activity: "Activity 3: English → Franco",
+                type: "mcq_text",
+                instruction: "Choose the correct Egyptian Arabic (Franco) word for:",
+                question: "Dining room",
+                options: [
+                    { text: "sofra", correct: true },
+                    { text: "oda el nom", correct: false },
+                    { text: "matb5", correct: false }
+                ]
+            },
+
+            // Activity 4: What Room is It?
+            {
+                activity: "Activity 4: What Room is It?",
+                type: "mcq_image",
+                instruction: "Look at the room illustration below:",
+                question: "What room is this?",
+                room: "salon",
+                options: [
+                    { text: "7ammam", correct: false },
+                    { text: "salon", correct: true },
+                    { text: "sofra", correct: false }
+                ]
+            },
+            {
+                activity: "Activity 4: What Room is It?",
+                type: "mcq_image",
+                instruction: "Look at the room illustration below:",
+                question: "What room is this?",
+                room: "bathroom",
+                options: [
+                    { text: "7ammam", correct: true },
+                    { text: "oda el nom", correct: false },
+                    { text: "matb5", correct: false }
+                ]
+            },
+
+            // Activity 5: Where Do You...?
+            {
+                activity: "Activity 5: Where Do You...?",
+                type: "mcq_image",
+                instruction: "Answer the practical English question:",
+                question: "Where do you eat dinner with your family?",
+                room: "sofra",
+                options: [
+                    { text: "matb5", correct: false },
+                    { text: "sofra", correct: true },
+                    { text: "7ammam", correct: false }
+                ]
+            },
+            {
+                activity: "Activity 5: Where Do You...?",
+                type: "mcq_image",
+                instruction: "Answer the practical English question:",
+                question: "Where do you take a warm shower?",
+                room: "bathroom",
+                options: [
+                    { text: "7ammam", correct: true },
+                    { text: "salon", correct: false },
+                    { text: "oda el nom", correct: false }
+                ]
+            },
+
+            // Activity 6: Drag the Word
+            {
+                activity: "Activity 6: Drag the Word",
+                type: "drag_single",
+                instruction: "Drag the correct Franco label onto the picture box:",
+                targetEnglish: "BEDROOM",
+                targetRoom: "bedroom",
+                options: ["7ammam", "oda el nom", "salon"],
+                correct: "oda el nom"
+            },
+            {
+                activity: "Activity 6: Drag the Word",
+                type: "drag_single",
+                instruction: "Drag the correct Franco label onto the picture box:",
+                targetEnglish: "KITCHEN",
+                targetRoom: "kitchen",
+                options: ["matb5", "sofra", "7ammam"],
+                correct: "matb5"
+            },
+            {
+                activity: "Activity 6: Drag the Word",
+                type: "drag_single",
+                instruction: "Drag the correct Franco label onto the picture box:",
+                targetEnglish: "LIVING ROOM",
+                targetRoom: "salon",
+                options: ["oda el nom", "sofra", "salon"],
+                correct: "salon"
+            }
+        ];
+
+        // App State
+        let currentStep = 0;
+        let score = 0;
+        let selectedTapToken = null; // For tap-to-select accessibility on drag activities
+        let matchingState = {}; // State for Activity 2
+
+        // DOM Element Cache
+        const appCard = document.getElementById('app-card');
+        const progressBar = document.getElementById('progress-bar');
+        const questionNumberEl = document.getElementById('question-number');
+        const activityTitleEl = document.getElementById('activity-title');
+        const headerScoreEl = document.getElementById('header-score');
+        const scoreBadge = document.getElementById('score-badge');
+        const feedbackBanner = document.getElementById('feedback-banner');
+        const feedbackText = document.getElementById('feedback-text');
+        const feedbackIcon = document.getElementById('feedback-icon');
+
+        // Web Audio Context Synthesizer for Fun Sound Effects (No external audio files needed)
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'incorrect') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+                    osc.frequency.exponentialRampToValueAtTime(164.81, ctx.currentTime + 0.2); // E3
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch (e) {
+                // Audio Context fallback if blocked
+            }
+        };
+
+        function initApp() {
+            currentStep = 0;
+            score = 0;
+            scoreBadge.classList.remove('hidden');
+            renderStep();
+        }
+
+        function updateProgress() {
+            const total = QUESTIONS.length;
+            const progressPct = ((currentStep) / total) * 100;
+            progressBar.style.width = `${progressPct}%`;
+            questionNumberEl.textContent = `Question ${currentStep + 1} of ${total}`;
+            headerScoreEl.textContent = `Score: ${score}`;
+        }
+
+        function renderStep() {
+            if (currentStep >= QUESTIONS.length) {
+                renderFinalQuizResults();
+                return;
+            }
+
+            updateProgress();
+            const q = QUESTIONS[currentStep];
+            activityTitleEl.textContent = q.activity;
+
+            if (q.type === 'mcq_image') {
+                renderMCQImage(q);
+            } else if (q.type === 'mcq_text') {
+                renderMCQText(q);
+            } else if (q.type === 'matching_all') {
+                renderMatchingAll(q);
+            } else if (q.type === 'drag_single') {
+                renderDragSingle(q);
+            }
+        }
+
+        // 1. MCQ with Image Render (Activities 1, 4, 5)
+        function renderMCQImage(q) {
+            appCard.innerHTML = `
+                <div class="flex flex-col items-center text-center space-y-4">
+                    <p class="text-sm md:text-base text-slate-500 font-medium">${q.instruction}</p>
+                    <h2 class="text-xl md:text-2xl font-bold font-display text-slate-800">${q.question}</h2>
+                    
+                    <div class="w-full max-w-sm h-48 md:h-56 bg-slate-50 border border-slate-200 rounded-2xl p-2 flex items-center justify-center shadow-inner">
+                        ${ROOM_SVGS[q.room]}
+                    </div>
+
+                    <div class="w-full max-w-md grid grid-cols-1 md:grid-cols-3 gap-3 pt-4">
+                        ${q.options.map((opt, idx) => `
+                            <button onclick="handleMCQAnswer(${opt.correct}, this)" 
+                                class="w-full py-3.5 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-emerald-500 rounded-xl font-display font-bold text-lg md:text-xl text-slate-700 shadow-sm transition-all transform active:scale-95 flex items-center justify-center">
+                                ${opt.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. MCQ Text Only Render (Activity 3)
+        function renderMCQText(q) {
+            appCard.innerHTML = `
+                <div class="flex flex-col items-center text-center space-y-6 my-auto">
+                    <p class="text-sm md:text-base text-slate-500 font-medium">${q.instruction}</p>
+                    
+                    <div class="bg-sky-50 border border-sky-200 px-8 py-6 rounded-2xl shadow-sm">
+                        <span class="text-xs font-bold text-sky-600 uppercase tracking-wider block mb-1">English Term</span>
+                        <h2 class="text-3xl md:text-4xl font-extrabold font-display text-slate-800">${q.question}</h2>
+                    </div>
+
+                    <div class="w-full max-w-md space-y-3 pt-2">
+                        ${q.options.map((opt) => `
+                            <button onclick="handleMCQAnswer(${opt.correct}, this)" 
+                                class="w-full py-4 px-6 bg-white hover:bg-emerald-50 border-2 border-slate-200 hover:border-emerald-500 rounded-2xl font-display font-bold text-xl text-slate-700 shadow-sm transition-all transform active:scale-98 text-left flex justify-between items-center group">
+                                <span>${opt.text}</span>
+                                <i class="fa-solid fa-arrow-right text-slate-300 group-hover:text-emerald-500 transition-colors"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Activity 2: Match All Pictures
+        function renderMatchingAll(q) {
+            matchingState = {}; // Reset
+            selectedTapToken = null;
+
+            appCard.innerHTML = `
+                <div class="flex flex-col space-y-4">
+                    <p class="text-sm text-slate-500 font-medium text-center">${q.instruction}</p>
+                    
+                    <!-- Draggable Word Bank -->
+                    <div id="word-bank" class="flex flex-wrap gap-2 justify-center p-3 bg-slate-100 rounded-2xl border border-slate-200 min-h-[60px]">
+                        ${q.items.map(item => `
+                            <div id="drag-${item.id}" 
+                                 draggable="true" 
+                                 ondragstart="handleMatchDragStart(event, '${item.id}', '${item.room}')"
+                                 onclick="handleTokenTap('${item.id}', '${item.room}', this)"
+                                 class="draggable-item px-4 py-2 bg-white border-2 border-slate-300 hover:border-blue-400 rounded-xl shadow-sm font-display font-bold text-base md:text-lg text-slate-700 cursor-pointer">
+                                ${item.label}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Room Drop Cards Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 pt-2">
+                        ${q.items.map(item => `
+                            <div id="drop-${item.room}" 
+                                 ondragover="allowDrop(event)" 
+                                 ondragleave="handleMatchDragLeave(event)"
+                                 ondrop="handleMatchDrop(event, '${item.room}')"
+                                 onclick="handleBoxTap('${item.room}')"
+                                 class="drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-2 flex flex-col items-center justify-between min-h-[160px] bg-slate-50 transition-all">
+                                <div class="w-full h-24 p-1">
+                                    ${ROOM_SVGS[item.room]}
+                                </div>
+                                <div id="target-slot-${item.room}" class="w-full py-1.5 px-1 bg-white border border-slate-200 rounded-lg text-center font-display font-bold text-xs text-slate-400">
+                                    Drop / Tap Here
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button id="check-matching-btn" onclick="checkMatchingResults()" class="mt-4 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-display font-bold rounded-xl shadow-md transition-all text-lg">
+                        Check All Matches ⭐
+                    </button>
+                </div>
+            `;
+        }
+
+        // 4. Activity 6: Drag Single Word to Picture
+        function renderDragSingle(q) {
+            selectedTapToken = null;
+
+            appCard.innerHTML = `
+                <div class="flex flex-col items-center text-center space-y-4">
+                    <p class="text-sm text-slate-500 font-medium">${q.instruction}</p>
+                    <div class="inline-block bg-amber-100 text-amber-800 px-4 py-1.5 rounded-full font-bold text-sm">
+                        Target English: ${q.targetEnglish}
+                    </div>
+
+                    <!-- Target Image Zone -->
+                    <div id="single-drop-zone" 
+                         ondragover="allowDrop(event)"
+                         ondragleave="handleSingleDragLeave(event)"
+                         ondrop="handleSingleDrop(event, '${q.correct}')"
+                         onclick="handleSingleBoxTap('${q.correct}')"
+                         class="w-full max-w-sm border-3 border-dashed border-slate-300 bg-slate-50 rounded-2xl p-4 flex flex-col items-center justify-center space-y-3 transition-all min-h-[220px]">
+                        <div class="w-full h-40">
+                            ${ROOM_SVGS[q.targetRoom]}
+                        </div>
+                        <div id="single-slot-text" class="px-6 py-2 bg-white border border-slate-200 rounded-xl font-display font-bold text-sm text-slate-400">
+                            Drop correct Franco word here
+                        </div>
+                    </div>
+
+                    <!-- Options draggable chips -->
+                    <div class="flex flex-wrap gap-3 justify-center pt-2">
+                        ${q.options.map((opt, i) => `
+                            <div id="single-opt-${i}" 
+                                 draggable="true" 
+                                 ondragstart="handleSingleDragStart(event, '${opt}')"
+                                 onclick="handleSingleTokenTap('${opt}', this)"
+                                 class="draggable-item px-5 py-3 bg-white border-2 border-slate-300 hover:border-emerald-400 rounded-xl font-display font-bold text-lg text-slate-700 shadow-md">
+                                ${opt}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // MCQ Answer Handling
+        function handleMCQAnswer(isCorrect, btnElement) {
+            // Disable all option buttons
+            const buttons = appCard.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600', 'animate-bounce-sm');
+                playSound('correct');
+                score += 10;
+                showFeedback(true, "Great job! 🎉");
+            } else {
+                btnElement.classList.remove('bg-white', 'border-slate-200');
+                btnElement.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+                playSound('incorrect');
+                showFeedback(false, "Almost! Try again.");
+            }
+
+            setTimeout(() => {
+                hideFeedback();
+                currentStep++;
+                renderStep();
+            }, 1400);
+        }
+
+        // Matching Drag/Tap Handlers
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drop-zone-active');
+        }
+
+        function handleMatchDragStart(ev, id, room) {
+            ev.dataTransfer.setData("text/plain", JSON.stringify({ id, room }));
+        }
+
+        function handleMatchDragLeave(ev) {
+            ev.currentTarget.classList.remove('drop-zone-active');
+        }
+
+        function handleMatchDrop(ev, targetRoom) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drop-zone-active');
+            const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
+            assignMatch(data.id, data.room, targetRoom);
+        }
+
+        function handleTokenTap(id, room, el) {
+            document.querySelectorAll('.draggable-item').forEach(d => d.classList.remove('selected-tap'));
+            if (selectedTapToken?.id === id) {
+                selectedTapToken = null;
+            } else {
+                selectedTapToken = { id, room, label: el.textContent.trim() };
+                el.classList.add('selected-tap');
+            }
+        }
+
+        function handleBoxTap(targetRoom) {
+            if (selectedTapToken) {
+                assignMatch(selectedTapToken.id, selectedTapToken.room, targetRoom);
+                selectedTapToken = null;
+                document.querySelectorAll('.draggable-item').forEach(d => d.classList.remove('selected-tap'));
+            }
+        }
+
+        function assignMatch(id, itemRoom, targetRoom) {
+            matchingState[targetRoom] = { id, itemRoom };
+            const slot = document.getElementById(`target-slot-${targetRoom}`);
+            const dragEl = document.getElementById(`drag-${id}`);
+            
+            if (slot && dragEl) {
+                slot.textContent = dragEl.textContent.trim();
+                slot.className = "w-full py-1.5 px-1 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-center font-display font-bold text-xs";
+                dragEl.style.opacity = "0.3";
+            }
+        }
+
+        function checkMatchingResults() {
+            const currentQ = QUESTIONS[currentStep];
+            let allCorrect = true;
+            let count = 0;
+
+            currentQ.items.forEach(item => {
+                if (matchingState[item.room] && matchingState[item.room].itemRoom === item.room) {
+                    count++;
+                } else {
+                    allCorrect = false;
+                }
+            });
+
+            if (count === currentQ.items.length) {
+                playSound('correct');
+                score += 20;
+                showFeedback(true, "Correct! ⭐ All matched!");
+                setTimeout(() => {
+                    hideFeedback();
+                    currentStep++;
+                    renderStep();
+                }, 1500);
+            } else {
+                playSound('incorrect');
+                showFeedback(false, `You got ${count}/5 correct. Try again!`);
+                setTimeout(() => {
+                    hideFeedback();
+                }, 1800);
+            }
+        }
+
+        // Single Drag Handlers (Activity 6)
+        let singleDragWord = "";
+
+        function handleSingleDragStart(ev, word) {
+            singleDragWord = word;
+            ev.dataTransfer.setData("text/plain", word);
+        }
+
+        function handleSingleDragLeave(ev) {
+            ev.currentTarget.classList.remove('drop-zone-active');
+        }
+
+        function handleSingleDrop(ev, correctWord) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drop-zone-active');
+            const word = ev.dataTransfer.getData("text/plain") || singleDragWord;
+            verifySingleDrag(word, correctWord);
+        }
+
+        function handleSingleTokenTap(word, el) {
+            document.querySelectorAll('.draggable-item').forEach(d => d.classList.remove('selected-tap'));
+            if (singleDragWord === word) {
+                singleDragWord = "";
+            } else {
+                singleDragWord = word;
+                el.classList.add('selected-tap');
+            }
+        }
+
+        function handleSingleBoxTap(correctWord) {
+            if (singleDragWord) {
+                verifySingleDrag(singleDragWord, correctWord);
+                singleDragWord = "";
+            }
+        }
+
+        function verifySingleDrag(word, correctWord) {
+            const slotText = document.getElementById('single-slot-text');
+            if (slotText) slotText.textContent = word;
+
+            if (word === correctWord) {
+                playSound('correct');
+                score += 10;
+                showFeedback(true, "Great job! 🎉");
+                setTimeout(() => {
+                    hideFeedback();
+                    currentStep++;
+                    renderStep();
+                }, 1400);
+            } else {
+                playSound('incorrect');
+                showFeedback(false, "Almost! Try again.");
+                setTimeout(() => {
+                    hideFeedback();
+                    if (slotText) slotText.textContent = "Drop correct Franco word here";
+                }, 1400);
+            }
+        }
+
+        function showFeedback(isSuccess, message) {
+            feedbackText.textContent = message;
+            feedbackIcon.textContent = isSuccess ? "✅" : "❌";
+            
+            feedbackBanner.className = `absolute bottom-4 left-4 right-4 p-4 rounded-2xl border text-center font-bold shadow-lg transition-all transform translate-y-0 opacity-100 z-50 flex items-center justify-center space-x-3 ${
+                isSuccess 
+                ? 'bg-emerald-500 text-white border-emerald-600' 
+                : 'bg-rose-500 text-white border-rose-600'
+            }`;
+        }
+
+        function hideFeedback() {
+            feedbackBanner.classList.add('translate-y-2', 'opacity-0', 'hidden');
+        }
+
+        function renderFinalQuizResults() {
+            progressBar.style.width = '100%';
+            questionNumberEl.textContent = "Completed!";
+            activityTitleEl.textContent = "Final Results & Homework Submission";
+
+            const maxScore = 130; // Total possible score
+            const isHigh = score >= 80;
+
+            appCard.innerHTML = `
+                <div class="flex flex-col items-center text-center space-y-6 my-auto">
+                    <div class="w-20 h-20 rounded-full ${isHigh ? 'bg-emerald-100 text-emerald-500' : 'bg-amber-100 text-amber-500'} flex items-center justify-center text-4xl shadow-inner">
+                        <i class="fa-solid ${isHigh ? 'fa-trophy' : 'fa-star-half-stroke'}"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="text-3xl font-extrabold font-display text-slate-800 mb-1">
+                            ${isHigh ? 'Great work! 🎉' : 'Good try! 💪'}
+                        </h2>
+                        <p class="text-slate-500 font-medium text-base">
+                            ${isHigh ? 'You mastered the rooms of the house in Franco Arabic!' : 'Let’s practice these words again to get 100%!'}
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 w-full max-w-sm flex justify-around items-center shadow-sm">
+                        <div>
+                            <span class="text-xs text-slate-400 font-bold block uppercase">Your Score</span>
+                            <span class="text-2xl font-black font-display text-emerald-600">${score}</span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-200"></div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-bold block uppercase">Total Questions</span>
+                            <span class="text-2xl font-black font-display text-slate-700">${QUESTIONS.length}</span>
+                        </div>
+                    </div>
+
+                    <!-- Formspree Homework Submission Form -->
+                    <form action="https://formspree.io/f/mdenjpyn" method="POST" class="w-full max-w-sm space-y-4 pt-2">
+                        <!-- Hidden Form Fields -->
+                        <input type="hidden" name="Score" value="${score}">
+                        <input type="hidden" name="Total Questions" value="${QUESTIONS.length}">
+                        <input type="hidden" name="Completion Status" value="Completed">
+
+                        <div class="text-left">
+                            <label for="student-name" class="block text-xs font-bold text-slate-600 uppercase mb-1">Your Name</label>
+                            <input type="text" id="student-name" name="Student Name" required placeholder="Enter your full name" 
+                                   class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none font-medium text-slate-800 placeholder-slate-400">
+                        </div>
+
+                        <button type="submit" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-display font-bold text-lg rounded-xl shadow-lg transition-all transform active:scale-98 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Submit Homework</span>
+                        </button>
+                    </form>
+
+                    <button onclick="initApp()" class="text-slate-400 hover:text-slate-600 font-bold text-sm underline pt-2">
+                        Try Again 🔄
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
